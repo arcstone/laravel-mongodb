@@ -7,8 +7,11 @@ use Jenssegers\Mongodb\Eloquent\Builder;
 use Jenssegers\Mongodb\Relations\EmbedsOneOrMany;
 use Jenssegers\Mongodb\Relations\EmbedsMany;
 use Jenssegers\Mongodb\Relations\EmbedsOne;
+use Jenssegers\Mongodb\Contracts\Mongo as MongoContract;
 
-abstract class Model extends \Jenssegers\Eloquent\Model {
+abstract class Model extends \Illuminate\Database\Eloquent\Model implements MongoContract {
+
+    use \Jenssegers\Mongodb\Mongo;
 
     /**
      * The collection associated with the model.
@@ -16,6 +19,10 @@ abstract class Model extends \Jenssegers\Eloquent\Model {
      * @var string
      */
     protected $collection;
+
+}
+
+trait Mongo extends \Jenssegers\Eloquent\Mongo {
 
     /**
      * The primary key for the model.
