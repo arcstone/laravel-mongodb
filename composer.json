@@ -17,6 +17,7 @@
         "illuminate/events": "5.0.*"
     },
     "require-dev": {
+        "phpunit/phpunit": "~4.0",
         "orchestra/testbench": "3.0.*",
         "mockery/mockery": "*",
         "satooshi/php-coveralls": "*"
@@ -27,9 +28,17 @@
             "Jenssegers\\Eloquent": "src/"
         }
     },
+    "autoload-dev": {
+        "classmap": [
+            "tests/TestCase.php",
+            "tests/models",
+            "tests/seeds"
+        ]
+    },
     "suggest": {
         "jenssegers/mongodb-session": "Add MongoDB session support to Laravel-MongoDB",
         "jenssegers/mongodb-sentry": "Add Sentry support to Laravel-MongoDB"
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
