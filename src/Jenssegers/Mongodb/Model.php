@@ -20,18 +20,18 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model implements Mong
      */
     protected $collection;
 
-}
-
-trait Mongo {
-    
-    use \Jenssegers\Eloquent\Mongo;
-
     /**
      * The primary key for the model.
      *
      * @var string
      */
     protected $primaryKey = '_id';
+
+}
+
+trait Mongo {
+ 
+    use \Jenssegers\Eloquent\Mongo;
 
     /**
      * The parent relation instance.
@@ -516,3 +516,4 @@ trait Mongo {
     }
 
 }
+

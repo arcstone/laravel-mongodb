@@ -12,7 +12,7 @@ use Jenssegers\Mongodb\Query\Builder as QueryBuilder;
 
 abstract class Model extends \Illuminate\Database\Eloquent\Model {
 
-    use Jenssegers\Eloquent\Mongo;
+    use \Jenssegers\Eloquent\Mongo;
 
 }
 
@@ -291,3 +291,4 @@ trait Mongo {
     }
 
 }
+
