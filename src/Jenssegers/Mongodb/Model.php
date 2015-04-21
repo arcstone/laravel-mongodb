@@ -22,7 +22,9 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model implements Mong
 
 }
 
-trait Mongo extends \Jenssegers\Eloquent\Mongo {
+trait Mongo {
+    
+    use \Jenssegers\Eloquent\Mongo;
 
     /**
      * The primary key for the model.
