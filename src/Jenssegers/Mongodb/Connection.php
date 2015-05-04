@@ -208,6 +208,49 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
+     * Execute a Closure within a transaction.
+     *
+     * @param  \Closure $callback
+     * @return mixed
+     */
+    public function transaction(\Closure $callback)
+    {
+        \Log::debug('Called DB::transaction() - MongoDB does not support transactions. Closure will be executed as-is.');
+
+        return $callback($this);
+    }
+
+    /**
+     * Start a new database transaction.
+     *
+     * @return void
+     */
+    public function beginTransaction()
+    {
+        \Log::debug('Called DB::beginTransaction() - MongoDB does not support transactions. This method has no effect. Changes are immediate.');
+    }
+
+    /**
+     * Commit the active database transaction.
+     *
+     * @return void
+     */
+    public function commit()
+    {
+        \Log::debug('Called DB::commit() - MongoDB does not support transactions. This method has no effect.');
+    }
+
+    /**
+     * Rollback the active database transaction.
+     *
+     * @return void
+     */
+    public function rollBack()
+    {
+        \Log::alert('Called DB::rollback() - MongoDB does not support transactions, unable to rollback. Invalid changes committed to the DB!');
+    }
+
+    /**
      * Dynamically pass methods to the connection.
      *
      * @param  string  $method
