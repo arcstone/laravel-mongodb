@@ -142,7 +142,15 @@ class Connection extends \Illuminate\Database\Connection {
             $options['password'] = $config['password'];
         }
 
-        return new MongoClient($dsn, $options);
+        // By default driver options is an empty array.
+        $driverOptions = array();
+
+        if (isset($config['driver_options']) && is_array($config['driver_options']))
+        {
+            $driverOptions = $config['driver_options'];
+        }
+
+        return new MongoClient($dsn, $options, $driverOptions);
     }
 
     /**
@@ -213,6 +221,36 @@ class Connection extends \Illuminate\Database\Connection {
     }
 
     /**
+     * Start a new database transaction.
+     *
+     * @return void
+     */
+    public function beginTransaction()
+    {
+        \Log::debug('Called DB::beginTransaction() - MongoDB does not support transactions. This method has no effect. Changes are immediate.');
+    }
+
+    /**
+     * Commit the active database transaction.
+     *
+     * @return void
+     */
+    public function commit()
+    {
+        \Log::debug('Called DB::commit() - MongoDB does not support transactions. This method has no effect.');
+    }
+
+    /**
+     * Rollback the active database transaction.
+     *
+     * @return void
+     */
+    public function rollBack()
+    {
+        \Log::alert('Called DB::rollback() - MongoDB does not support transactions, unable to rollback. Invalid changes committed to the DB!');
+    }
+
+    /**
      * Dynamically pass methods to the connection.
      *
      * @param  string  $method
@@ -223,5 +261,4 @@ class Connection extends \Illuminate\Database\Connection {
     {
         return call_user_func_array(array($this->db, $method), $parameters);
     }
-
 }
