@@ -1,8 +1,8 @@
 <?php namespace Jenssegers\Mongodb\Eloquent;
 
-use MongoCursor;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use MongoCursor;
 
 class Builder extends EloquentBuilder {
 
@@ -11,10 +11,10 @@ class Builder extends EloquentBuilder {
      *
      * @var array
      */
-    protected $passthru = array(
+    protected $passthru = [
         'toSql', 'lists', 'insert', 'insertGetId', 'pluck',
-        'count', 'min', 'max', 'avg', 'sum', 'exists', 'push', 'pull'
-    );
+        'count', 'min', 'max', 'avg', 'sum', 'exists', 'push', 'pull',
+    ];
 
     /**
      * Update a record in the database.
@@ -104,7 +104,7 @@ class Builder extends EloquentBuilder {
      * @param  array   $extra
      * @return int
      */
-    public function increment($column, $amount = 1, array $extra = array())
+    public function increment($column, $amount = 1, array $extra = [])
     {
         // Intercept operations on embedded models and delegate logic
         // to the parent relation instance.
@@ -119,7 +119,7 @@ class Builder extends EloquentBuilder {
 
             $this->model->syncOriginalAttribute($column);
 
-            $result = $this->model->update(array($column => $value));
+            $result = $this->model->update([$column => $value]);
 
             return $result;
         }
@@ -135,7 +135,7 @@ class Builder extends EloquentBuilder {
      * @param  array   $extra
      * @return int
      */
-    public function decrement($column, $amount = 1, array $extra = array())
+    public function decrement($column, $amount = 1, array $extra = [])
     {
         // Intercept operations on embedded models and delegate logic
         // to the parent relation instance.
@@ -150,7 +150,7 @@ class Builder extends EloquentBuilder {
 
             $this->model->syncOriginalAttribute($column);
 
-            return $this->model->update(array($column => $value));
+            return $this->model->update([$column => $value]);
         }
 
         return parent::decrement($column, $amount, $extra);
@@ -174,7 +174,7 @@ class Builder extends EloquentBuilder {
         $relationCount = array_count_values($query->lists($relation->getHasCompareKey()));
 
         // Remove unwanted related objects based on the operator and count.
-        $relationCount = array_filter($relationCount, function($counted) use ($count, $operator)
+        $relationCount = array_filter($relationCount, function ($counted) use ($count, $operator)
         {
             // If we are comparing to 0, we always need all results.
             if ($count == 0) return true;
@@ -194,7 +194,7 @@ class Builder extends EloquentBuilder {
         });
 
         // If the operator is <, <= or !=, we will use whereNotIn.
-        $not = in_array($operator, array('<', '<=', '!='));
+        $not = in_array($operator, ['<', '<=', '!=']);
 
         // If we are comparing to 0, we need an additional $not flip.
         if ($count == 0) $not = !$not;
@@ -213,29 +213,29 @@ class Builder extends EloquentBuilder {
      * @return mixed
      */
     public function raw($expression = null)
-	{
-		// Get raw results from the query builder.
-		$results = $this->query->raw($expression);
+    {
+        // Get raw results from the query builder.
+        $results = $this->query->raw($expression);
 
-		// Convert MongoCursor results to a collection of models.
-		if ($results instanceof MongoCursor)
-		{
-			$results = iterator_to_array($results, false);
+        // Convert MongoCursor results to a collection of models.
+        if ($results instanceof MongoCursor)
+        {
+            $results = iterator_to_array($results, false);
 
-			return $this->model->hydrate($results);
-		}
+            return $this->model->hydrate($results);
+        }
 
-		// The result is a single object.
-		else if (is_array($results) and array_key_exists('_id', $results))
-		{
-			$model = $this->model->newFromBuilder($results);
+        // The result is a single object.
+        elseif (is_array($results) and array_key_exists('_id', $results))
+        {
+            $model = $this->model->newFromBuilder($results);
 
-			$model->setConnection($this->model->getConnection());
+            $model->setConnection($this->model->getConnection());
 
-			return $model;
-		}
+            return $model;
+        }
 
-		return $results;
-	}
+        return $results;
+    }
 
 }

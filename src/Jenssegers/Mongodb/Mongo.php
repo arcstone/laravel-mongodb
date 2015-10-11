@@ -1,12 +1,18 @@
 <?php namespace Jenssegers\Mongodb;
 
-use DateTime, MongoId, MongoDate, Carbon\Carbon;
+use Carbon\Carbon;
+use DateTime;
+use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Jenssegers\Mongodb\DatabaseManager as Resolver;
 use Jenssegers\Mongodb\Eloquent\Builder;
-use Jenssegers\Mongodb\Relations\EmbedsOneOrMany;
+use Jenssegers\Mongodb\Eloquent\HybridRelations;
+use Jenssegers\Mongodb\Query\Builder as QueryBuilder;
 use Jenssegers\Mongodb\Relations\EmbedsMany;
 use Jenssegers\Mongodb\Relations\EmbedsOne;
+use Jenssegers\Mongodb\Relations\EmbedsOneOrMany;
+use MongoDate;
+use MongoId;
+use ReflectionMethod;
 
 trait Mongo {
 
@@ -22,8 +28,7 @@ trait Mongo {
     /**
      * Custom accessor for the model's id.
      *
-     * @param mixed $value
-     *
+     * @param  mixed  $value
      * @return mixed
      */
     public function getIdAttribute($value)
@@ -51,16 +56,17 @@ trait Mongo {
      */
     public function getQualifiedKeyName()
     {
-    	return $this->getKeyName();
+        return $this->getKeyName();
     }
-
 
     /**
      * Define an embedded one-to-many relationship.
      *
      * @param  string  $related
-     * @param  string  $collection
-     * @return \Illuminate\Database\Eloquent\Relations\EmbedsMany
+     * @param  string  $localKey
+     * @param  string  $foreignKey
+     * @param  string  $relation
+     * @return \Jenssegers\Mongodb\Relations\EmbedsMany
      */
     protected function embedsMany($related, $localKey = null, $foreignKey = null, $relation = null)
     {
@@ -95,8 +101,10 @@ trait Mongo {
      * Define an embedded one-to-many relationship.
      *
      * @param  string  $related
-     * @param  string  $collection
-     * @return \Illuminate\Database\Eloquent\Relations\EmbedsMany
+     * @param  string  $localKey
+     * @param  string  $foreignKey
+     * @param  string  $relation
+     * @return \Jenssegers\Mongodb\Relations\EmbedsOne
      */
     protected function embedsOne($related, $localKey = null, $foreignKey = null, $relation = null)
     {
@@ -174,7 +182,7 @@ trait Mongo {
      */
     protected function getDateFormat()
     {
-        return 'Y-m-d H:i:s';
+        return $this->dateFormat ?: 'Y-m-d H:i:s';
     }
 
     /**
@@ -194,9 +202,7 @@ trait Mongo {
      */
     public function getTable()
     {
-        if (isset($this->collection)) return $this->collection;
-
-        return parent::getTable();
+        return $this->collection ?: parent::getTable();
     }
 
     /**
@@ -208,14 +214,9 @@ trait Mongo {
     public function getAttribute($key)
     {
         // Check if the key is an array dot notation.
-        if (str_contains($key, '.'))
+        if (str_contains($key, '.') and array_has($this->attributes, $key))
         {
-            $attributes = array_dot($this->attributes);
-
-            if (array_key_exists($key, $attributes))
-            {
-                return $this->getAttributeValue($key);
-            }
+            return $this->getAttributeValue($key);
         }
 
         $camelKey = camel_case($key);
@@ -225,22 +226,28 @@ trait Mongo {
         // is handled by the parent method.
         if (method_exists($this, $camelKey))
         {
-            $relations = $this->$camelKey();
+            $method = new ReflectionMethod(get_called_class(), $camelKey);
 
-            // This attribute matches an embedsOne or embedsMany relation so we need
-            // to return the relation results instead of the interal attributes.
-            if ($relations instanceof EmbedsOneOrMany)
+            // Ensure the method is not static to avoid conflicting with Eloquent methods.
+            if ( ! $method->isStatic())
             {
-                // If the key already exists in the relationships array, it just means the
-                // relationship has already been loaded, so we'll just return it out of
-                // here because there is no need to query within the relations twice.
-                if (array_key_exists($key, $this->relations))
-                {
-                    return $this->relations[$key];
-                }
+                $relations = $this->$camelKey();
 
-                // Get the relation results.
-                return $this->getRelationshipFromMethod($key, $camelKey);
+                // This attribute matches an embedsOne or embedsMany relation so we need
+                // to return the relation results instead of the interal attributes.
+                if ($relations instanceof EmbedsOneOrMany)
+                {
+                    // If the key already exists in the relationships array, it just means the
+                    // relationship has already been loaded, so we'll just return it out of
+                    // here because there is no need to query within the relations twice.
+                    if (array_key_exists($key, $this->relations))
+                    {
+                        return $this->relations[$key];
+                    }
+
+                    // Get the relation results.
+                    return $this->getRelationshipFromMethod($key, $camelKey);
+                }
             }
         }
 
@@ -274,7 +281,6 @@ trait Mongo {
      *
      * @param  string  $key
      * @param  mixed   $value
-     * @return void
      */
     public function setAttribute($key, $value)
     {
@@ -294,7 +300,9 @@ trait Mongo {
                 $value = $this->fromDateTime($value);
             }
 
-            array_set($this->attributes, $key, $value); return;
+            array_set($this->attributes, $key, $value);
+
+            return;
         }
 
         parent::setAttribute($key, $value);
@@ -321,18 +329,27 @@ trait Mongo {
             }
         }
 
+        // Convert dot-notation dates.
+        foreach ($this->getDates() as $key)
+        {
+            if (str_contains($key, '.') and array_has($attributes, $key))
+            {
+                array_set($attributes, $key, (string) $this->asDateTime(array_get($attributes, $key)));
+            }
+        }
+
         return $attributes;
     }
 
     /**
      * Remove one or more fields.
      *
-     * @param  mixed $columns
+     * @param  mixed  $columns
      * @return int
      */
     public function drop($columns)
     {
-        if ( ! is_array($columns)) $columns = array($columns);
+        if ( ! is_array($columns)) $columns = [$columns];
 
         // Unset attributes
         foreach ($columns as $column)
@@ -365,7 +382,7 @@ trait Mongo {
             }
 
             // Do batch push by default.
-            if ( ! is_array($values)) $values = array($values);
+            if ( ! is_array($values)) $values = [$values];
 
             $query = $this->setKeysForSaveQuery($this->newQuery());
 
@@ -380,12 +397,14 @@ trait Mongo {
     /**
      * Remove one or more values from an array.
      *
+     * @param  string  $column
+     * @param  mixed   $values
      * @return mixed
      */
     public function pull($column, $values)
     {
         // Do batch pull by default.
-        if ( ! is_array($values)) $values = array($values);
+        if ( ! is_array($values)) $values = [$values];
 
         $query = $this->setKeysForSaveQuery($this->newQuery());
 
@@ -400,11 +419,10 @@ trait Mongo {
      * @param  string  $column
      * @param  array   $values
      * @param  bool    $unique
-     * @return void
      */
     protected function pushAttributeValues($column, array $values, $unique = false)
     {
-        $current = $this->getAttributeFromArray($column) ?: array();
+        $current = $this->getAttributeFromArray($column) ?: [];
 
         foreach ($values as $value)
         {
@@ -420,15 +438,14 @@ trait Mongo {
     }
 
     /**
-     * Rempove one or more values to the underlying attribute value and sync with original.
+     * Remove one or more values to the underlying attribute value and sync with original.
      *
      * @param  string  $column
      * @param  array   $values
-     * @return void
      */
     protected function pullAttributeValues($column, array $values)
     {
-        $current = $this->getAttributeFromArray($column) ?: array();
+        $current = $this->getAttributeFromArray($column) ?: [];
 
         foreach ($values as $value)
         {
@@ -448,7 +465,7 @@ trait Mongo {
     /**
      * Set the parent relation.
      *
-     * @param Relation $relation
+     * @param  \Illuminate\Database\Eloquent\Relations\Relation  $relation
      */
     public function setParentRelation(Relation $relation)
     {
@@ -458,7 +475,7 @@ trait Mongo {
     /**
      * Get the parent relation.
      *
-     * @return Relation
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
      */
     public function getParentRelation()
     {
@@ -477,6 +494,18 @@ trait Mongo {
     }
 
     /**
+     * Get a new query builder instance for the connection.
+     *
+     * @return Builder
+     */
+    protected function newBaseQueryBuilder()
+    {
+        $connection = $this->getConnection();
+
+        return new QueryBuilder($connection, $connection->getPostProcessor());
+    }
+
+    /**
      * Handle dynamic method calls into the method.
      *
      * @param  string  $method
@@ -488,11 +517,10 @@ trait Mongo {
         // Unset method
         if ($method == 'unset')
         {
-            return call_user_func_array(array($this, 'drop'), $parameters);
+            return call_user_func_array([$this, 'drop'], $parameters);
         }
 
         return parent::__call($method, $parameters);
     }
 
 }
-

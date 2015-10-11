@@ -1,16 +1,16 @@
 <?php namespace Jenssegers\Mongodb\Relations;
 
-use MongoId;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use MongoId;
 
 class EmbedsMany extends EmbedsOneOrMany {
 
     /**
      * Get the results of the relationship.
      *
-     * @return Jenssegers\Mongodb\Eloquent\Collection
+     * @return \Jenssegers\Mongodb\Eloquent\Collection
      */
     public function getResults()
     {
@@ -20,10 +20,10 @@ class EmbedsMany extends EmbedsOneOrMany {
     /**
      * Save a new model and attach it to the parent model.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @param  \Illuminate\Database\Eloquent\Model $model
      * @return \Illuminate\Database\Eloquent\Model
      */
-    public function performInsert(Model $model, array $values)
+    public function performInsert(Model $model)
     {
         // Generate a new key if needed.
         if ($model->getKeyName() == '_id' and ! $model->getKey())
@@ -54,7 +54,7 @@ class EmbedsMany extends EmbedsOneOrMany {
      * @param  \Illuminate\Database\Eloquent\Model  $model
      * @return Model|bool
      */
-    public function performUpdate(Model $model, array $values)
+    public function performUpdate(Model $model)
     {
         // For deeply nested documents, let the parent handle the changes.
         if ($this->isNested())
@@ -99,7 +99,7 @@ class EmbedsMany extends EmbedsOneOrMany {
         // Get the correct foreign key value.
         $foreignKey = $this->getForeignKeyValue($model);
 
-        $result = $this->getBaseQuery()->pull($this->localKey, array($model->getKeyName() => $foreignKey));
+        $result = $this->getBaseQuery()->pull($this->localKey, [$model->getKeyName() => $foreignKey]);
 
         if ($result) $this->dissociate($model);
 
@@ -130,7 +130,7 @@ class EmbedsMany extends EmbedsOneOrMany {
      * @param  mixed  $ids
      * @return int
      */
-    public function dissociate($ids = array())
+    public function dissociate($ids = [])
     {
         $ids = $this->getIdsArrayFrom($ids);
 
@@ -161,7 +161,7 @@ class EmbedsMany extends EmbedsOneOrMany {
      * @param  mixed  $ids
      * @return int
      */
-    public function destroy($ids = array())
+    public function destroy($ids = [])
     {
         $count = 0;
 
@@ -187,9 +187,9 @@ class EmbedsMany extends EmbedsOneOrMany {
     public function delete()
     {
         // Overwrite the local key with an empty array.
-        $result = $this->query->update(array($this->localKey => array()));
+        $result = $this->query->update([$this->localKey => []]);
 
-        if ($result) $this->setEmbedded(array());
+        if ($result) $this->setEmbedded([]);
 
         return $result;
     }
@@ -200,7 +200,7 @@ class EmbedsMany extends EmbedsOneOrMany {
      * @param  mixed  $ids
      * @return int
      */
-    public function detach($ids = array())
+    public function detach($ids = [])
     {
         return $this->destroy($ids);
     }
@@ -269,11 +269,10 @@ class EmbedsMany extends EmbedsOneOrMany {
     /**
      * Get a paginator for the "select" statement.
      *
-     * @param  int    $perPage
-     * @param  array  $columns
+     * @param  int  $perPage
      * @return \Illuminate\Pagination\Paginator
      */
-    public function paginate($perPage = null, $columns = array('*'))
+    public function paginate($perPage = null)
     {
         $page = Paginator::resolveCurrentPage();
         $perPage = $perPage ?: $this->related->getPerPage();
@@ -286,7 +285,7 @@ class EmbedsMany extends EmbedsOneOrMany {
         $sliced = array_slice($results, $start, $perPage);
 
         return new LengthAwarePaginator($sliced, $total, $perPage, $page, [
-            'path' => Paginator::resolveCurrentPath()
+            'path' => Paginator::resolveCurrentPath(),
         ]);
     }
 
@@ -297,18 +296,17 @@ class EmbedsMany extends EmbedsOneOrMany {
      */
     protected function getEmbedded()
     {
-        return parent::getEmbedded() ?: array();
+        return parent::getEmbedded() ?: [];
     }
 
     /**
      * Set the embedded records array.
      *
-     * @param array $models
-     * @return void
+     * @param  array  $models
      */
     protected function setEmbedded($models)
     {
-        if ( ! is_array($models)) $models = array($models);
+        if ( ! is_array($models)) $models = [$models];
 
         return parent::setEmbedded(array_values($models));
     }
@@ -325,7 +323,7 @@ class EmbedsMany extends EmbedsOneOrMany {
         // Collection methods
         if (method_exists('Jenssegers\Mongodb\Eloquent\Collection', $method))
         {
-            return call_user_func_array(array($this->getResults(), $method), $parameters);
+            return call_user_func_array([$this->getResults(), $method], $parameters);
         }
 
         return parent::__call($method, $parameters);

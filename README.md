@@ -28,16 +28,26 @@ For Laravel 5, install the latest stable version using composer:
 composer require jenssegers/mongodb
 ```
 
-For Laravel 4.2, use version `~2.0`:
+### Version Compatibility
 
-```
-composer require jenssegers/mongodb ~2.0
-```
+ Laravel  | Package
+:---------|:----------
+ 4.2.x    | 2.0.x
+ 5.0.x    | 2.1.x
+ 5.1.x    | 2.2.x
 
-Add the service provider in `app/config/app.php`:
+And add the service provider in `config/app.php`:
 
 ```php
-'Jenssegers\Mongodb\MongodbServiceProvider',
+Jenssegers\Mongodb\MongodbServiceProvider::class,
+```
+
+For usage with [Lumen](http://lumen.laravel.com), add the service provider in `bootstrap/app.php`. In this file, you will also need to enable Eloquent. You must however ensure that your call to `$app->withEloquent();` is **below** where you have registered the `MongodbServiceProvider`:
+
+```php
+$app->register('Jenssegers\Mongodb\MongodbServiceProvider');
+
+$app->withEloquent();
 ```
 
 The service provider will register a mongodb database extension with the original database manager. There is no need to register additional facades or objects. When using mongodb connections, Laravel will automatically provide you with the corresponding mongodb objects.
@@ -65,13 +75,13 @@ And add a new mongodb connection:
 ```php
 'mongodb' => array(
     'driver'   => 'mongodb',
-    'host'     => 'localhost',
-    'port'     => 27017,
-    'username' => 'username',
-    'password' => 'password',
-    'database' => 'database',
+    'host'     => env('DB_HOST', 'localhost'),
+    'port'     => env('DB_PORT', 27017),
+    'database' => env('DB_DATABASE', ''),
+    'username' => env('DB_USERNAME', ''),
+    'password' => env('DB_PASSWORD', ''),
     'options' => array(
-        'db' => 'admin' // sets the authenication database required by mongo 3
+        'db' => 'admin' // sets the authentication database required by mongo 3
     )
 ),
 ```
@@ -82,10 +92,10 @@ You can connect to multiple servers or replica sets with the following configura
 'mongodb' => array(
     'driver'   => 'mongodb',
     'host'     => array('server1', 'server2'),
-    'port'     => 27017,
-    'username' => 'username',
-    'password' => 'password',
-    'database' => 'database',
+    'port'     => env('DB_PORT', 27017),
+    'database' => env('DB_DATABASE', ''),
+    'username' => env('DB_USERNAME', ''),
+    'password' => env('DB_PASSWORD', ''),
     'options'  => array('replicaSet' => 'replicaSetName')
 ),
 ```

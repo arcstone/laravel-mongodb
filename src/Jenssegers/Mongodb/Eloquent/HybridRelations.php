@@ -1,25 +1,24 @@
-<?php namespace Jenssegers\Eloquent;
+<?php namespace Jenssegers\Mongodb\Eloquent;
 
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Jenssegers\Mongodb\Relations\HasOne;
-use Jenssegers\Mongodb\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Jenssegers\Mongodb\Model;
 use Jenssegers\Mongodb\Relations\BelongsTo;
 use Jenssegers\Mongodb\Relations\BelongsToMany;
+use Jenssegers\Mongodb\Relations\HasMany;
+use Jenssegers\Mongodb\Relations\HasOne;
 use Jenssegers\Mongodb\Relations\MorphTo;
-use Jenssegers\Mongodb\Query\Builder as QueryBuilder;
 
-trait Mongo {
+trait HybridRelations {
 
     /**
-    * Define a one-to-one relationship.
-    *
-    * @param  string  $related
-    * @param  string  $foreignKey
-    * @param  string  $localKey
-    * @return \Illuminate\Database\Eloquent\Relations\HasOne
-    */
+     * Define a one-to-one relationship.
+     *
+     * @param  string  $related
+     * @param  string  $foreignKey
+     * @param  string  $localKey
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
     public function hasOne($related, $foreignKey = null, $localKey = null)
     {
         // Check if it is a relation with an original model.
@@ -67,13 +66,13 @@ trait Mongo {
     }
 
     /**
-    * Define a one-to-many relationship.
-    *
-    * @param  string  $related
-    * @param  string  $foreignKey
-    * @param  string  $localKey
-    * @return \Illuminate\Database\Eloquent\Relations\HasMany
-    */
+     * Define a one-to-many relationship.
+     *
+     * @param  string  $related
+     * @param  string  $foreignKey
+     * @param  string  $localKey
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function hasMany($related, $foreignKey = null, $localKey = null)
     {
         // Check if it is a relation with an original model.
@@ -124,14 +123,14 @@ trait Mongo {
     }
 
     /**
-    * Define an inverse one-to-one or many relationship.
-    *
-    * @param  string  $related
-    * @param  string  $foreignKey
-    * @param  string  $otherKey
-    * @param  string  $relation
-    * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-    */
+     * Define an inverse one-to-one or many relationship.
+     *
+     * @param  string  $related
+     * @param  string  $foreignKey
+     * @param  string  $otherKey
+     * @param  string  $relation
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function belongsTo($related, $foreignKey = null, $otherKey = null, $relation = null)
     {
         // If no relation name was given, we will use this debug backtrace to extract
@@ -155,7 +154,7 @@ trait Mongo {
         // when combined with an "_id" should conventionally match the columns.
         if (is_null($foreignKey))
         {
-            $foreignKey = snake_case($relation).'_id';
+            $foreignKey = snake_case($relation) . '_id';
         }
 
         $instance = new $related;
@@ -266,23 +265,4 @@ trait Mongo {
         return new BelongsToMany($query, $this, $collection, $foreignKey, $otherKey, $relation);
     }
 
-    /**
-     * Get a new query builder instance for the connection.
-     *
-     * @return Builder
-     */
-    protected function newBaseQueryBuilder()
-    {
-        $connection = $this->getConnection();
-
-        // Check the connection type
-        if ($connection instanceof \Jenssegers\Mongodb\Connection)
-        {
-            return new QueryBuilder($connection, $connection->getPostProcessor());
-        }
-
-        return parent::newBaseQueryBuilder();
-    }
-
 }
-

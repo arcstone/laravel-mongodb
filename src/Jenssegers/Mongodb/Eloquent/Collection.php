@@ -37,10 +37,10 @@ class Collection extends EloquentCollection {
         // and keep going.
         if (func_num_args() == 2)
         {
-            list($value, $operator) = array($operator, '=');
+            list($value, $operator) = [$operator, '='];
         }
 
-        return $this->filter(function($item) use ($key, $operator, $value)
+        return $this->filter(function ($item) use ($key, $operator, $value)
         {
             $actual = $item->{$key};
 

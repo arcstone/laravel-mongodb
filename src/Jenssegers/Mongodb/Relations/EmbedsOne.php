@@ -1,9 +1,7 @@
 <?php namespace Jenssegers\Mongodb\Relations;
 
-use MongoId;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\Relation;
+use MongoId;
 
 class EmbedsOne extends EmbedsOneOrMany {
 
@@ -23,7 +21,7 @@ class EmbedsOne extends EmbedsOneOrMany {
      * @param  \Illuminate\Database\Eloquent\Model  $model
      * @return \Illuminate\Database\Eloquent\Model
      */
-    public function performInsert(Model $model, array $values)
+    public function performInsert(Model $model)
     {
         // Generate a new key if needed.
         if ($model->getKeyName() == '_id' and ! $model->getKey())
@@ -39,7 +37,7 @@ class EmbedsOne extends EmbedsOneOrMany {
             return $this->parent->save();
         }
 
-        $result = $this->getBaseQuery()->update(array($this->localKey => $model->getAttributes()));
+        $result = $this->getBaseQuery()->update([$this->localKey => $model->getAttributes()]);
 
         // Attach the model to its parent.
         if ($result) $this->associate($model);
@@ -51,9 +49,9 @@ class EmbedsOne extends EmbedsOneOrMany {
      * Save an existing model and attach it to the parent model.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return Model|bool
+     * @return \Illuminate\Database\Eloquent\Model|bool
      */
-    public function performUpdate(Model $model, array $values)
+    public function performUpdate(Model $model)
     {
         if ($this->isNested())
         {
@@ -76,7 +74,7 @@ class EmbedsOne extends EmbedsOneOrMany {
     /**
      * Delete an existing model and detach it from the parent model.
      *
-     * @param  Model  $model
+     * @param  \Illuminate\Database\Eloquent\Model  $model
      * @return int
      */
     public function performDelete(Model $model)
@@ -90,7 +88,7 @@ class EmbedsOne extends EmbedsOneOrMany {
         }
 
         // Overwrite the local key with an empty array.
-        $result = $this->getBaseQuery()->update(array($this->localKey => null));
+        $result = $this->getBaseQuery()->update([$this->localKey => null]);
 
         // Detach the model from its parent.
         if ($result) $this->dissociate();

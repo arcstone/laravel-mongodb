@@ -1,10 +1,9 @@
 <?php namespace Jenssegers\Mongodb\Relations;
 
-use MongoId;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Collection as BaseCollection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Jenssegers\Mongodb\Eloquent\Collection;
 
 abstract class EmbedsOneOrMany extends Relation {
@@ -35,10 +34,10 @@ abstract class EmbedsOneOrMany extends Relation {
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  \Illuminate\Database\Eloquent\Model    $parent
+     * @param  \Illuminate\Database\Eloquent\Model    $related
      * @param  string  $localKey
      * @param  string  $foreignKey
      * @param  string  $relation
-     * @return void
      */
     public function __construct(Builder $query, Model $parent, Model $related, $localKey, $foreignKey, $relation)
     {
@@ -60,8 +59,6 @@ abstract class EmbedsOneOrMany extends Relation {
 
     /**
      * Set the base constraints on the relation query.
-     *
-     * @return void
      */
     public function addConstraints()
     {
@@ -75,7 +72,6 @@ abstract class EmbedsOneOrMany extends Relation {
      * Set the constraints for an eager load of the relation.
      *
      * @param  array  $models
-     * @return void
      */
     public function addEagerConstraints(array $models)
     {
@@ -87,7 +83,6 @@ abstract class EmbedsOneOrMany extends Relation {
      *
      * @param  array   $models
      * @param  string  $relation
-     * @return void
      */
     public function initRelation(array $models, $relation)
     {
@@ -124,10 +119,10 @@ abstract class EmbedsOneOrMany extends Relation {
     }
 
     /**
-    * Shorthand to get the results of the relationship.
-    *
-    * @return Jenssegers\Mongodb\Eloquent\Collection
-    */
+     * Shorthand to get the results of the relationship.
+     *
+     * @return \Jenssegers\Mongodb\Eloquent\Collection
+     */
     public function get()
     {
         return $this->getResults();
@@ -157,14 +152,16 @@ abstract class EmbedsOneOrMany extends Relation {
     }
 
     /**
-     * Attach an array of models to the parent instance.
+     * Attach a collection of models to the parent instance.
      *
-     * @param  array  $models
-     * @return array
+     * @param  \Illuminate\Database\Eloquent\Collection|array  $models
+     * @return \Illuminate\Database\Eloquent\Collection|array
      */
-    public function saveMany(array $models)
+    public function saveMany($models)
     {
-        array_walk($models, array($this, 'save'));
+        foreach ($models as $model) {
+            $this->save($model);
+        }
 
         return $models;
     }
@@ -197,7 +194,7 @@ abstract class EmbedsOneOrMany extends Relation {
      */
     public function createMany(array $records)
     {
-        $instances = array();
+        $instances = [];
 
         foreach ($records as $record)
         {
@@ -208,14 +205,19 @@ abstract class EmbedsOneOrMany extends Relation {
     }
 
     /**
-     * Transform single ID, single Model or array of Models into an array of IDs
+     * Transform single ID, single Model or array of Models into an array of IDs.
      *
      * @param  mixed  $ids
      * @return array
      */
     protected function getIdsArrayFrom($ids)
     {
-        if ( ! is_array($ids)) $ids = array($ids);
+        if ($ids instanceof Collection)
+        {
+            $ids = $ids->all();
+        }
+
+        if ( ! is_array($ids)) $ids = [$ids];
 
         foreach ($ids as &$id)
         {
@@ -241,7 +243,7 @@ abstract class EmbedsOneOrMany extends Relation {
     /**
      * Set the embedded records array.
      *
-     * @param  array $records
+     * @param  array  $records
      * @return \Illuminate\Database\Eloquent\Model
      */
     protected function setEmbedded($records)
@@ -260,7 +262,7 @@ abstract class EmbedsOneOrMany extends Relation {
     /**
      * Get the foreign key value for the relation.
      *
-     * @param  mixed $id
+     * @param  mixed  $id
      * @return mixed
      */
     protected function getForeignKeyValue($id)
@@ -278,11 +280,11 @@ abstract class EmbedsOneOrMany extends Relation {
      * Convert an array of records to a Collection.
      *
      * @param  array  $records
-     * @return Jenssegers\Mongodb\Eloquent\Collection
+     * @return \Jenssegers\Mongodb\Eloquent\Collection
      */
-    protected function toCollection(array $records = array())
+    protected function toCollection(array $records = [])
     {
-        $models = array();
+        $models = [];
 
         foreach ($records as $attributes)
         {
@@ -303,9 +305,9 @@ abstract class EmbedsOneOrMany extends Relation {
      * @param  array  $attributes
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function toModel($attributes = array())
+    protected function toModel($attributes = [])
     {
-        if (is_null($attributes)) return null;
+        if (is_null($attributes)) return;
 
         $model = $this->related->newFromBuilder((array) $attributes);
 
@@ -314,7 +316,7 @@ abstract class EmbedsOneOrMany extends Relation {
         $model->setRelation($this->foreignKey, $this->parent);
 
         // If you remove this, you will get segmentation faults!
-        $model->setHidden(array_merge($model->getHidden(), array($this->foreignKey)));
+        $model->setHidden(array_merge($model->getHidden(), [$this->foreignKey]));
 
         return $model;
     }
@@ -322,7 +324,7 @@ abstract class EmbedsOneOrMany extends Relation {
     /**
      * Get the relation instance of the parent.
      *
-     * @return Illuminate\Database\Eloquent\Relations\Relation
+     * @return \Illuminate\Database\Eloquent\Relations\Relation
      */
     protected function getParentRelation()
     {
@@ -356,7 +358,7 @@ abstract class EmbedsOneOrMany extends Relation {
     /**
      * Check if this relation is nested in another relation.
      *
-     * @return boolean
+     * @return bool
      */
     protected function isNested()
     {
@@ -366,6 +368,7 @@ abstract class EmbedsOneOrMany extends Relation {
     /**
      * Get the fully qualified local key name.
      *
+     * @param  string  $glue
      * @return string
      */
     protected function getPathHierarchy($glue = '.')

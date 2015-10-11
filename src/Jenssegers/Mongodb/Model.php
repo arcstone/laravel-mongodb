@@ -1,10 +1,12 @@
 <?php namespace Jenssegers\Mongodb;
 
+use Illuminate\Database\Eloquent\Model as BaseModel;
+use Jenssegers\Mongodb\Eloquent\HybridRelations;
 use Jenssegers\Mongodb\Contracts\Mongo as MongoContract;
 
-abstract class Model extends \Illuminate\Database\Eloquent\Model implements MongoContract {
+abstract class Model extends BaseModel implements MongoContract {
 
-    use \Jenssegers\Mongodb\Mongo;
+    use Mongo, HybridRelations;
 
     /**
      * The collection associated with the model.
@@ -21,4 +23,3 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model implements Mong
     protected $primaryKey = '_id';
 
 }
-
