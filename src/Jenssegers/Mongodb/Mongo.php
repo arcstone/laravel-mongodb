@@ -16,7 +16,7 @@ use ReflectionMethod;
 
 trait Mongo {
 
-    use \Jenssegers\Eloquent\Mongo;
+    use HybridRelations;
 
     /**
      * The parent relation instance.
