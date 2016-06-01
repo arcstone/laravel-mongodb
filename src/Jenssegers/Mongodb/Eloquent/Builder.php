@@ -4,8 +4,8 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use MongoCursor;
 
-class Builder extends EloquentBuilder {
-
+class Builder extends EloquentBuilder
+{
     /**
      * The methods that should be returned from query builder.
      *
@@ -20,20 +20,20 @@ class Builder extends EloquentBuilder {
      * Update a record in the database.
      *
      * @param  array  $values
+     * @param  array  $options
      * @return int
      */
-    public function update(array $values)
+    public function update(array $values, array $options = [])
     {
         // Intercept operations on embedded models and delegate logic
         // to the parent relation instance.
-        if ($relation = $this->model->getParentRelation())
-        {
+        if ($relation = $this->model->getParentRelation()) {
             $relation->performUpdate($this->model, $values);
 
             return 1;
         }
 
-        return parent::update($values);
+        return $this->query->update($this->addUpdatedAtColumn($values), $options);
     }
 
     /**
@@ -46,8 +46,7 @@ class Builder extends EloquentBuilder {
     {
         // Intercept operations on embedded models and delegate logic
         // to the parent relation instance.
-        if ($relation = $this->model->getParentRelation())
-        {
+        if ($relation = $this->model->getParentRelation()) {
             $relation->performInsert($this->model, $values);
 
             return true;
@@ -67,8 +66,7 @@ class Builder extends EloquentBuilder {
     {
         // Intercept operations on embedded models and delegate logic
         // to the parent relation instance.
-        if ($relation = $this->model->getParentRelation())
-        {
+        if ($relation = $this->model->getParentRelation()) {
             $relation->performInsert($this->model, $values);
 
             return $this->model->getKey();
@@ -86,8 +84,7 @@ class Builder extends EloquentBuilder {
     {
         // Intercept operations on embedded models and delegate logic
         // to the parent relation instance.
-        if ($relation = $this->model->getParentRelation())
-        {
+        if ($relation = $this->model->getParentRelation()) {
             $relation->performDelete($this->model);
 
             return $this->model->getKey();
@@ -108,8 +105,7 @@ class Builder extends EloquentBuilder {
     {
         // Intercept operations on embedded models and delegate logic
         // to the parent relation instance.
-        if ($relation = $this->model->getParentRelation())
-        {
+        if ($relation = $this->model->getParentRelation()) {
             $value = $this->model->{$column};
 
             // When doing increment and decrements, Eloquent will automatically
@@ -139,8 +135,7 @@ class Builder extends EloquentBuilder {
     {
         // Intercept operations on embedded models and delegate logic
         // to the parent relation instance.
-        if ($relation = $this->model->getParentRelation())
-        {
+        if ($relation = $this->model->getParentRelation()) {
             $value = $this->model->{$column};
 
             // When doing increment and decrements, Eloquent will automatically
@@ -174,13 +169,13 @@ class Builder extends EloquentBuilder {
         $relationCount = array_count_values($query->lists($relation->getHasCompareKey()));
 
         // Remove unwanted related objects based on the operator and count.
-        $relationCount = array_filter($relationCount, function ($counted) use ($count, $operator)
-        {
+        $relationCount = array_filter($relationCount, function ($counted) use ($count, $operator) {
             // If we are comparing to 0, we always need all results.
-            if ($count == 0) return true;
+            if ($count == 0) {
+                return true;
+            }
 
-            switch ($operator)
-            {
+            switch ($operator) {
                 case '>=':
                 case '<':
                     return $counted >= $count;
@@ -197,7 +192,9 @@ class Builder extends EloquentBuilder {
         $not = in_array($operator, ['<', '<=', '!=']);
 
         // If we are comparing to 0, we need an additional $not flip.
-        if ($count == 0) $not = !$not;
+        if ($count == 0) {
+            $not = !$not;
+        }
 
         // All related ids.
         $relatedIds = array_keys($relationCount);
@@ -218,16 +215,14 @@ class Builder extends EloquentBuilder {
         $results = $this->query->raw($expression);
 
         // Convert MongoCursor results to a collection of models.
-        if ($results instanceof MongoCursor)
-        {
+        if ($results instanceof MongoCursor) {
             $results = iterator_to_array($results, false);
 
             return $this->model->hydrate($results);
         }
 
         // The result is a single object.
-        elseif (is_array($results) and array_key_exists('_id', $results))
-        {
+        elseif (is_array($results) and array_key_exists('_id', $results)) {
             $model = $this->model->newFromBuilder($results);
 
             $model->setConnection($this->model->getConnection());
@@ -237,5 +232,4 @@ class Builder extends EloquentBuilder {
 
         return $results;
     }
-
 }
