@@ -352,7 +352,7 @@ abstract class EmbedsOneOrMany extends Relation
      * @param  string  $glue
      * @return string
      */
-    protected function getPathHierarchy($glue = '.')
+    public function getPathHierarchy($glue = '.')
     {
         if ($parentRelation = $this->getParentRelation()) {
             return $parentRelation->getPathHierarchy($glue) . $glue . $this->localKey;

@@ -405,7 +405,7 @@ abstract class Model extends BaseModel
 
             $this->pushAttributeValues($column, $values, $unique);
 
-            return $query->push($column, $values, $unique);
+            return $query->push($this->getColumnName($column), $values, $unique);
         }
 
         return parent::push();
@@ -429,7 +429,22 @@ abstract class Model extends BaseModel
 
         $this->pullAttributeValues($column, $values);
 
-        return $query->pull($column, $values);
+        return $query->pull($this->getColumnName($column), $values);
+    }
+
+    /**
+     * Get the fully qualified name for columns in an embedded document
+     *
+     * @param string $column
+     * @return string
+     */
+    protected function getColumnName($column)
+    {
+        if ($this->getParentRelation() instanceof EmbedsOneOrMany) {
+            $column = $this->getParentRelation()->getPathHierarchy() . ".$column";
+        }
+
+        return $column;
     }
 
     /**
