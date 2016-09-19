@@ -42,6 +42,13 @@ class Builder extends BaseBuilder
     public $hint;
 
     /**
+     * Custom options to add to the query.
+     *
+     * @var array
+     */
+    public $options = [];
+
+    /**
      * Indicate if we are executing a pagination query.
      *
      * @var bool
@@ -255,6 +262,11 @@ class Builder extends BaseBuilder
                 'typeMap' => ['root' => 'array', 'document' => 'array'],
             ];
 
+            // Add custom query options
+            if (count($this->options)) {
+                $options = array_merge($options, $this->options);
+            }
+
             // Execute aggregation
             $results = iterator_to_array($this->collection->aggregate($pipeline, $options));
 
@@ -312,6 +324,11 @@ class Builder extends BaseBuilder
 
             // Fix for legacy support, converts the results to arrays instead of objects.
             $options['typeMap'] = ['root' => 'array', 'document' => 'array'];
+
+            // Add custom query options
+            if (count($this->options)) {
+                $options = array_merge($options, $this->options);
+            }
 
             // Execute query and get MongoCursor
             $cursor = $this->collection->find($wheres, $options);
@@ -1018,6 +1035,19 @@ class Builder extends BaseBuilder
     protected function compileWhereRaw($where)
     {
         return $where['sql'];
+    }
+
+    /**
+     * Set custom options for the query.
+     *
+     * @param  array  $options
+     * @return $this
+     */
+    public function options(array $options)
+    {
+        $this->options = $options;
+
+        return $this;
     }
 
     /**
